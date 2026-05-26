@@ -57,6 +57,14 @@ function generate(setlistText) {
   results.push("Mnp Sheet: " + mnpUrl);
   Logger.log("  作成完了: " + mnpUrl);
 
+  // Setlist Print Sheet
+  Logger.log("Setlist Print Sheet 生成中...");
+  const printTitle = prefix + " - " + artistSuffix + "SETLIST";
+  const printId = generatePrintSheet_(setlist, matcher, folderId, printTitle, artistName);
+  const printUrl = "https://docs.google.com/spreadsheets/d/" + printId;
+  results.push("Setlist: " + printUrl);
+  Logger.log("  作成完了: " + printUrl);
+
   // Music Data コピー
   if (cfg[CONFIG_KEYS.MUSIC_DATA_FOLDER_ID]) {
     Logger.log("Music Data コピー中...");

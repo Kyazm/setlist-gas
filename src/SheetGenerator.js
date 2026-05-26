@@ -331,6 +331,131 @@ function updateTotalTime_(rows, min, sec) {
   }
 }
 
+/**
+ * セットリスト印刷用シートを生成する。
+ * テンプレートをコピーし、文字情報だけ差し替える。
+ */
+function generatePrintSheet_(setlist, matcher, folderId, title, artistName) {
+  const TEMPLATE_ID = "1xBJj0T8HsyR0VMAFIulraawl_iUNOYIND4Y_ltK6x9Y";
+  const MC_LABEL = "─────────── MC ──────────";
+
+  // テンプレートをコピー
+  const copiedFile = DriveApp.getFileById(TEMPLATE_ID).makeCopy(title);
+  const ss = SpreadsheetApp.openById(copiedFile.getId());
+
+  // gid=1858923716 のシートを探す（なければ最初のシート）
+  let sheet = ss.getSheets()[0];
+  for (const s of ss.getSheets()) {
+    if (s.getSheetId() === 1858923716) {
+      sheet = s;
+      break;
+    }
+  }
+
+  // "No" 行を探してテンプレート構造を把握
+  const lastRow = sheet.getLastRow();
+  let headerRow = -1;
+  for (let r = 1; r <= Math.min(lastRow, 10); r++) {
+    if (sheet.getRange(r, 1).getDisplayValue().trim() === "No") {
+      headerRow = r;
+      break;
+    }
+  }
+  if (headerRow < 0) headerRow = 4;
+  const contentStartRow = headerRow + 1;
+
+  // アーティスト名を更新（headerRowの2行以上前にあれば）
+  if (headerRow > 1) {
+    sheet.getRange(1, 3).setValue(artistName || "");
+  }
+
+  // イベント情報を更新（headerRowの直前行）
+  if (headerRow > 2) {
+    const mm = setlist.date.substring(4, 6);
+    const dd = setlist.date.substring(6, 8);
+    sheet.getRange(headerRow - 1, 3).setValue(
+      mm + "." + dd + "　" + setlist.venue + "「" + setlist.event + "」"
+    );
+  }
+
+  // セットリストアイテムを構築
+  const items = [];
+  for (const section of setlist.sections) {
+    for (const item of section.items) {
+      if (item.type === "mc") {
+        items.push({ type: "mc" });
+      } else {
+        const entry = matchSong(matcher, item.name);
+        items.push({ type: "song", name: entry ? entry.name : item.name });
+      }
+    }
+  }
+
+  // テンプレートのスロット数（各アイテム = コンテンツ行 + 空行 の2行）
+  const templateSlots = Math.floor((lastRow - contentStartRow + 1) / 2);
+  const needed = items.length;
+  const cols = sheet.getMaxColumns();
+
+  // 行数調整
+  if (needed > templateSlots) {
+    const extraPairs = needed - templateSlots;
+    sheet.insertRowsAfter(lastRow, extraPairs * 2);
+    // フォーマット・行高をコピー
+    for (let i = 0; i < extraPairs; i++) {
+      const newContentRow = lastRow + 1 + i * 2;
+      const newEmptyRow = lastRow + 2 + i * 2;
+      sheet.getRange(contentStartRow, 1, 1, cols)
+        .copyTo(sheet.getRange(newContentRow, 1, 1, cols), SpreadsheetApp.CopyPasteType.PASTE_FORMAT);
+      sheet.getRange(contentStartRow + 1, 1, 1, cols)
+        .copyTo(sheet.getRange(newEmptyRow, 1, 1, cols), SpreadsheetApp.CopyPasteType.PASTE_FORMAT);
+      sheet.setRowHeight(newContentRow, sheet.getRowHeight(contentStartRow));
+      sheet.setRowHeight(newEmptyRow, sheet.getRowHeight(contentStartRow + 1));
+      sheet.getRange(newContentRow, 3, 1, cols - 2).merge();
+      sheet.getRange(newEmptyRow, 3, 1, cols - 2).merge();
+    }
+  } else if (needed < templateSlots) {
+    sheet.deleteRows(contentStartRow + needed * 2, (templateSlots - needed) * 2);
+  }
+
+  // コンテンツを書き込み
+  let songNo = 1;
+  for (let i = 0; i < items.length; i++) {
+    const row = contentStartRow + i * 2;
+    if (items[i].type === "mc") {
+      sheet.getRange(row, 1).setValue("");
+      sheet.getRange(row, 3).setValue(MC_LABEL);
+    } else {
+      sheet.getRange(row, 1).setValue(songNo);
+      sheet.getRange(row, 3).setValue(items[i].name);
+      songNo++;
+    }
+    // 空行クリア
+    sheet.getRange(row + 1, 1).setValue("");
+    sheet.getRange(row + 1, 3).setValue("");
+  }
+
+  // 最後の曲より下の余分な行を削除
+  const lastContentRow = contentStartRow + needed * 2 - 1;
+  if (sheet.getMaxRows() > lastContentRow) {
+    sheet.deleteRows(lastContentRow + 1, sheet.getMaxRows() - lastContentRow);
+  }
+
+  // 不要なシートを削除
+  const keepId = sheet.getSheetId();
+  for (const s of ss.getSheets()) {
+    if (s.getSheetId() !== keepId) {
+      ss.deleteSheet(s);
+    }
+  }
+
+  // フォルダに移動
+  const file = DriveApp.getFileById(ss.getId());
+  DriveApp.getFolderById(folderId).addFile(file);
+  DriveApp.getRootFolder().removeFile(file);
+
+  return ss.getId();
+}
+
 function buildSetlistSummary_(setlist) {
   const rows = [["セットリスト"]];
   for (const section of setlist.sections) {
