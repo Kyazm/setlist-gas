@@ -365,15 +365,16 @@ function generatePrintSheet_(setlist, matcher, folderId, title, artistName) {
   const contentStartRow = headerRow + 1;
 
   // アーティスト名を更新（headerRowの2行以上前にあれば）
+  // テンプレートはA列にアーティスト名・イベントタイトルを置く（曲名のみC列）
   if (headerRow > 1) {
-    sheet.getRange(1, 3).setValue(artistName || "");
+    sheet.getRange(1, 1).setValue(artistName || "");
   }
 
-  // イベント情報を更新（headerRowの直前行）
+  // イベントタイトルを更新（headerRowの直前行・A3:L3）
   if (headerRow > 2) {
     const mm = setlist.date.substring(4, 6);
     const dd = setlist.date.substring(6, 8);
-    sheet.getRange(headerRow - 1, 3).setValue(
+    sheet.getRange(headerRow - 1, 1).setValue(
       mm + "." + dd + "　" + setlist.venue + "「" + setlist.event + "」"
     );
   }

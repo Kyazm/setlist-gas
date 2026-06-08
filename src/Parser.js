@@ -25,12 +25,8 @@ function parseSetlist(text) {
 
   const rest = header.substring(spaceIdx + 1);
   const atIdx = rest.indexOf("@");
-  if (atIdx === -1) {
-    throw new Error("invalid header: missing '@' between event and venue: " + header);
-  }
-
-  const event = rest.substring(0, atIdx);
-  const venue = rest.substring(atIdx + 1);
+  const event = atIdx === -1 ? rest : rest.substring(0, atIdx);
+  const venue = atIdx === -1 ? "" : rest.substring(atIdx + 1);
 
   const sections = [];
   let currentItems = [];
@@ -68,7 +64,8 @@ function shortDate(setlist) {
 }
 
 function folderName(setlist) {
-  return shortDate(setlist) + " " + setlist.event + "@" + setlist.venue;
+  const base = shortDate(setlist) + " " + setlist.event;
+  return setlist.venue ? base + "@" + setlist.venue : base;
 }
 
 function filePrefix(setlist) {

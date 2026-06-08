@@ -79,8 +79,17 @@ function testParseMCCaseInsensitive() {
   assertEqual_(result.sections[0].items[0].type, "mc", "lowercase mc detected");
 }
 
+function testParseNoVenue() {
+  const input = "20260530 SoloEvent\nSong1";
+  const result = parseSetlist(input);
+  assertEqual_(result.event, "SoloEvent", "event without venue");
+  assertEqual_(result.venue, "", "venue is empty when no @");
+  assertEqual_(folderName(result), "260530 SoloEvent", "folderName omits @ when no venue");
+  assertEqual_(filePrefix(result), "260530 SoloEvent", "filePrefix without venue");
+}
+
 function testParseInvalidHeader() {
-  const inputs = ["", "20260530", "20260530 NoAtSign", "2026053 Short@Date"];
+  const inputs = ["", "20260530", "2026053 Short@Date"];
   for (const input of inputs) {
     try {
       parseSetlist(input);
@@ -150,6 +159,7 @@ function runAllTests() {
     testParse,
     testParseConsecutiveEmptyLines,
     testParseMCCaseInsensitive,
+    testParseNoVenue,
     testParseInvalidHeader,
     testMatchExact,
     testMatchCaseInsensitive,
