@@ -19,11 +19,11 @@ function copyMusicData(musicDataFolderId, targetFolderId, setlist, matcher) {
     if (!name.toLowerCase().endsWith(".wav")) continue;
 
     const songName = name.replace(/\.wav$/i, "");
-    wavMap[songName.toLowerCase()] = { file, songName };
+    wavMap[normalizeKey_(songName)] = { file, songName };
 
     const entry = matchSong(matcher, songName);
     if (entry) {
-      wavMap[entry.name.toLowerCase()] = { file, songName };
+      wavMap[normalizeKey_(entry.name)] = { file, songName };
     }
   }
 
@@ -39,8 +39,8 @@ function copyMusicData(musicDataFolderId, targetFolderId, setlist, matcher) {
       const entry = matchSong(matcher, item.name);
       const canonicalName = entry ? entry.name : item.name;
 
-      let wav = wavMap[canonicalName.toLowerCase()];
-      if (!wav) wav = wavMap[item.name.toLowerCase()];
+      let wav = wavMap[normalizeKey_(canonicalName)];
+      if (!wav) wav = wavMap[normalizeKey_(item.name)];
 
       if (!wav) {
         Logger.log("警告: wav未検出 " + item.name + " → スキップ");

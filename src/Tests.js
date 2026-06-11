@@ -136,6 +136,19 @@ function testMatchNotFound() {
   assertEqual_(matchSong(m, "Unknown Song"), null, "not found returns null");
 }
 
+function testMatchNFDvsNFC() {
+  // ファイル名は macOS 由来の NFD(濁点分解)、入力は NFC を想定
+  const nfc = "モナリザ";
+  const nfd = nfc.normalize("NFD");
+  assert_(nfc !== nfd, "precondition: NFC and NFD differ as raw strings");
+
+  const m1 = createMatcher([{ name: nfd }]);
+  assert_(matchSong(m1, nfc) !== null, "NFC input matches NFD entry");
+
+  const m2 = createMatcher([{ name: nfc }]);
+  assert_(matchSong(m2, nfd) !== null, "NFD input matches NFC entry");
+}
+
 function testLoadSongInfoFromSheet() {
   const rows = [
     ["セトリ セクション", "曲", "時間(合計: 30:00)", "BPM", "Key", "エイリアス"],
@@ -165,6 +178,7 @@ function runAllTests() {
     testMatchCaseInsensitive,
     testMatchAlias,
     testMatchNotFound,
+    testMatchNFDvsNFC,
     testLoadSongInfoFromSheet,
   ];
 

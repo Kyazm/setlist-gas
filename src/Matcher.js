@@ -52,6 +52,16 @@ function getCell_(cells, idx) {
 }
 
 /**
+ * 照合キーを正規化する。
+ * macOS 由来のファイル名(NFD)と入力テキスト(NFC)の濁点表現差を吸収するため NFC へ統一する。
+ * @param {string} s
+ * @returns {string}
+ */
+function normalizeKey_(s) {
+  return s.trim().normalize("NFC").toLowerCase();
+}
+
+/**
  * Matcher を作成する。
  * @param {Array<{ name: string, aliases?: string[] }>} entries
  * @returns {Object.<string, object>} lowercase key → entry
@@ -59,10 +69,10 @@ function getCell_(cells, idx) {
 function createMatcher(entries) {
   const map = {};
   for (const e of entries) {
-    map[e.name.toLowerCase()] = e;
+    map[normalizeKey_(e.name)] = e;
     if (e.aliases) {
       for (const alias of e.aliases) {
-        const key = alias.trim().toLowerCase();
+        const key = normalizeKey_(alias);
         if (key) map[key] = e;
       }
     }
@@ -76,5 +86,5 @@ function createMatcher(entries) {
  * @returns {object|null}
  */
 function matchSong(matcher, name) {
-  return matcher[name.trim().toLowerCase()] || null;
+  return matcher[normalizeKey_(name)] || null;
 }
